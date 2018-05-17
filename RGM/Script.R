@@ -50,7 +50,12 @@ trolley_numbers = mixedsort(trolley_numbers)[-c(length(trolley_numbers))]
 minibus_numbers = unique(unlist(strsplit(df$minibus, ", ")))
 minibus_numbers = mixedsort(minibus_numbers)[-c(length(minibus_numbers))]
 
-strsplit("a.b.c", "."))
+bus_numbers_circled = c("5","10","11","18л","18п","22","27","28","35","35а","37","39","40","42","42а",
+"45","47","49","51","54","58","60","61","68","69","69а", "78","83","89","90","90а", "94","96","99")
+minibus_numbers_circled = c("12", "20", "23", "24", "25", "38", "40", "49", "93", "94", "96")
+trolley_numbers_circled = c("2", "12")
+tram_numbers_circled = NULL
+
 
 
 
@@ -157,10 +162,16 @@ df_tram_routes = read.csv2(file = file.path(dataDir, "Tram routes.csv"))[, - c(1
 
 # Route plots ----
 
+df2 = Stops_list_for_route2(df_minibus_routes, "40")
+#df2 = df2[ df2$name %in% c("Универсам", "ул. Интернациональная"), ]
 
 AllBusStops = plotmap(
-                 lat = df2$lat, lon = df2$lon, API = "google2", zoom = 15,
-                 col = "tomato", pch = 20, cex = 1.6)
+                 lat = df2$lat, lon = df2$lon, API = "google2", zoom = 13,
+                 col = c( "tomato",rep("steelblue", dim(df2)[1]-2), "tomato"), pch = 20, cex = 1.6)
+
+# One bus stop
+BusStop = plotmap(lat = 47.20661, lon = 39.7169, map, col = "purple", pch = "20", cex = 1.5)
+
 
 str_count(string = df$bus, pattern = paste( " ", bus_numbers[1], sep = "") )
 
@@ -199,49 +210,66 @@ map <- GetMap(center = c(df$lat[554], df$lon[554]), zoom = 15,
        size = c(640, 640), destfile = file.path(tempdir(), "meuse.png"),
         maptype = "mobile", SCALE = 1);
 
-par(cex = 2)
 
 
 
-#pdf( file = paste(plotDir, "/bus routes heat.pdf", sep = ""), width = 7, height = 7, pointsize = 12)
-png(filename = file.path(plotDir, "Bus routes heat.png"), width = 640, height = 640, units = "px", pointsize = 16, bg = "white", res = NA, family = "", restoreConsole = TRUE, type = c("cairo-png"))
+
+pdf( file = paste(plotDir, "/Bus routes heat.pdf", sep = ""), width = 7, height = 7, pointsize = 12)
+#png(filename = file.path(plotDir, "Bus routes heat.png"), width = 640, height = 640, units = "px", pointsize = 16, bg = "white", res = NA, family = "", restoreConsole = TRUE, type = c("cairo-png"))
 
 df3 = df[df$n_bus > 0,]
+par(cex = 0.5)
 bubbleMap( df3, coords = c("lon", "lat"), map,
       zcol = 'n_bus', key.entries = 1 + 2 ^ (0:4), colPalette = colorRampPalette(c("steelblue", "tomato"))(length(1 + 2 ^ (0:4))), do.sqrt = T, alpha = 0.5, verbose = 0.5)
 
+text(x = grconvertX(0.5, from = "npc"), y = grconvertY(0.5, from = "npc"),
+        labels = "Stepan Sushko", cex = 5, font = 2, col = adjustcolor("steelblue", alpha.f = 0.2), srt = 45)
+
 dev.off()
 
 
-png(filename = file.path(plotDir, "Minibus routes heat.png"), width = 640, height = 640, units = "px", pointsize = 16, bg = "white", res = NA, family = "", restoreConsole = TRUE, type = c("cairo-png"))
+pdf(file = paste(plotDir, "/Minibus routes heat.pdf", sep = ""), width = 7, height = 7, pointsize = 12)
+#png(filename = file.path(plotDir, "Minibus routes heat.png"), width = 640, height = 640, units = "px", pointsize = 16, bg = "white", res = NA, family = "", restoreConsole = TRUE, type = c("cairo-png"))
 
 df3 = df[df$n_minibus > 0,]
+par(cex = 0.5)
 bubbleMap( df3, coords = c("lon", "lat"), map,
       zcol = 'n_minibus', key.entries = 1 + 2 ^ (0:4), colPalette = colorRampPalette(c("steelblue", "tomato"))(length(1 + 2 ^ (0:4))), do.sqrt = T, alpha = 0.5, verbose = 0.5)
 
+text(x = grconvertX(0.5, from = "npc"), y = grconvertY(0.5, from = "npc"),
+        labels = "Stepan Sushko", cex = 5, font = 2, col = adjustcolor("steelblue", alpha.f = 0.2), srt = 45)
+
 dev.off()
 
-png(filename = file.path(plotDir, "TrolleyBus routes heat.png"), width = 640, height = 640, units = "px", pointsize = 16, bg = "white", res = NA, family = "", restoreConsole = TRUE, type = c("cairo-png"))
+
+pdf(file = paste(plotDir, "/TrolleyBus routes heat.pdf", sep = ""), width = 7, height = 7, pointsize = 12)
+
+#png(filename = file.path(plotDir, "TrolleyBus routes heat.png"), width = 640, height = 640, units = "px", pointsize = 16, bg = "white", res = NA, family = "", restoreConsole = TRUE, type = c("cairo-png"))
 
 df3 = df[df$n_trolley > 0,]
+par(cex = 2)
 bubbleMap( df3, coords = c("lon", "lat"), map,
       zcol = 'n_trolley', key.entries = c(1 + 1:4), colPalette = colorRampPalette(c("steelblue", "tomato"))(4), do.sqrt = T, alpha = 0.5, verbose = 0.5)
 
+text(x = grconvertX(0.5, from = "npc"), y = grconvertY(0.5, from = "npc"),
+        labels = "Степан Сушко\nдля\n       Ростов-Транспорт", cex = 5, font = 2, col = adjustcolor("steelblue", alpha.f = 0.2), srt = 45)
+
 dev.off()
 
-png(filename = file.path(plotDir, "All routes heat.png"), width = 640, height = 640, units = "px", pointsize = 16, bg = "white", res = NA, family = "", restoreConsole = TRUE, type = c("cairo-png"))
+#png(filename = file.path(plotDir, "All routes heat.png"), width = 640, height = 640, units = "px", pointsize = 16, bg = "white", res = NA, family = "", restoreConsole = TRUE, type = c("cairo-png"))
 
 df3 = df[df$n_all > 0,]
 bubbleMap(df3, coords = c("lon", "lat"), map,
-      zcol = 'n_all', key.entries = 1 + 2 ^ (0:5), colPalette = colorRampPalette(c("steelblue", "tomato"))( 6 ), do.sqrt = T, alpha = 0.5, verbose = 0.25)
+      zcol = 'n_all', key.entries = 1 + 2 ^ (0:5), colPalette = colorRampPalette(c("steelblue", "tomato"))(6), do.sqrt = T, alpha = 0.5, verbose = 0.25)
+
+text(x = grconvertX(0.5, from = "npc"), y = grconvertY(0.5, from = "npc"),
+        labels = "Степан Сушко\nдля\n       Ростов-Транспорт", cex = 2, font = 2, col = adjustcolor("steelblue", alpha.f = 0.35), srt = 45)
 
 dev.off()
 
 max(df$n_all )
 
 
-# One bus stop
-BusStop = plotmap(lat = 47.20661, lon = 39.7169, map, col = "purple", pch = "20", cex = 1.5)
 
 
 
@@ -274,7 +302,7 @@ Stops_list_for_route2( df_tram_routes, "4" )
 # Number of bus stops
 tmp = NULL
 for (bn in bus_numbers){
-    df2 = Stops_list_for_route2(df_bus_routes, bn)
+    df2 = Stops_list_for_route2(df_bus_routes[!(df_bus_routes$route_n %in% bus_numbers_circled),], bn)
     tmp = c(tmp, dim(df2)[1])}
 df_sn = data.frame(route_name = bus_numbers, stops_n = tmp, vehicle = rep("bus", length(bus_numbers)))
 summary( tmp )
@@ -282,7 +310,7 @@ summary( tmp )
 # Number of bus stops
 tmp = NULL
 for (bn in minibus_numbers) {
-    df2 = Stops_list_for_route2(df_minibus_routes, bn)
+    df2 = Stops_list_for_route2(df_minibus_routes[!(df_minibus_routes$route_n %in% minibus_numbers_circled),], bn)
     tmp = c(tmp, dim(df2)[1])}
 df_sn = rbind(df_sn, data.frame(route_name = minibus_numbers, stops_n = tmp, vehicle = rep("minibus", length(minibus_numbers))))
 summary(tmp)
@@ -290,7 +318,7 @@ summary(tmp)
 # Number of bus stops
 tmp = NULL
 for (bn in trolley_numbers) {
-    df2 = Stops_list_for_route2(df_trolley_routes, bn)
+    df2 = Stops_list_for_route2(df_trolley_routes[!(df_trolley_routes$route_n %in% trolley_numbers_circled),], bn)
     tmp = c(tmp, dim(df2)[1])}
 df_sn = rbind(df_sn, data.frame(route_name = trolley_numbers, stops_n = tmp, vehicle = rep("trolley", length(trolley_numbers))))
 summary(tmp)
@@ -303,6 +331,10 @@ for (bn in tram_numbers) {
 df_sn = rbind(df_sn, data.frame(route_name = tram_numbers, stops_n = tmp, vehicle = rep("tram", length(tram_numbers))))
 summary(tmp)
 
+df_sn = df_sn[ df_sn$stops_n != 0, ] 
+
+
+
 
 # Plots 
 ggplot(data = df_sn, aes(vehicle, stops_n)) +
@@ -313,10 +345,24 @@ df_sn2 = as.data.frame(t(cbind(
     summary(df_sn[df_sn$vehicle == "bus", 2]),
     summary(df_sn[df_sn$vehicle == "minibus", 2]),
     summary(df_sn[df_sn$vehicle == "trolley", 2]),
-    summary(df_sn[df_sn$vehicle == "tram", 2])
-)))
+    summary(df_sn[df_sn$vehicle == "tram", 2]))))
+
 df_sn2 = cbind(df_sn2, c("автобус", "маршрутка", "тролейбус", "трамвай"))
 colnames(df_sn2)[7] = "vehicle"
+
+df_routes_n = data.frame(
+    vehicle = c("автобус", "маршрутка", "тролейбус", "трамвай"),
+    routes_n = c(length(bus_numbers), length(minibus_numbers), length(trolley_numbers), length(tram_numbers)))
+p00 = ggplot(data = df_routes_n, aes(vehicle, routes_n)) +
+    geom_bar(stat = "identity", fill = "steelblue") + ggtitle("Число маршрутов\n в Ростове") + xlab("") + ylab("") + theme(plot.margin = unit(c(0.0, 0.0, -0.2, 0.0), "cm")) + ylim(c(0,70))
+
+df_routes_n = data.frame(
+    vehicle = c("автобус", "маршрутка", "тролейбус", "трамвай"),
+    routes_n = c(length(bus_numbers_circled), length(minibus_numbers_circled), length(trolley_numbers_circled), length(tram_numbers_circled)))
+p0 = ggplot(data = df_routes_n, aes(vehicle, routes_n)) +
+    geom_bar(stat = "identity", fill = "steelblue") + ggtitle("Число кольцевых маршрутов\n в Ростове") + xlab("") + ylab("") + theme(plot.margin = unit(c(0.0, 0.0, -0.2, 0.0), "cm")) + ylim(c(0, 70))
+
+
 
 p1 = ggplot(data = df_sn2, aes(vehicle, Min.)) +
     geom_bar(stat = "identity", fill = "steelblue") + ggtitle("Минимальное число остановок\n на маршруте в Ростове") + xlab("") + ylab("") + theme(plot.margin = unit(c(0.0, 0.0, -0.2, 0.0), "cm"))
@@ -327,10 +373,32 @@ p2 = ggplot(data = df_sn2, aes(vehicle, Max.)) +
 p3 = ggplot(data = df_sn2, aes(vehicle, Mean)) +
     geom_bar(stat = "identity", fill = "steelblue") + ggtitle("Среднее число остановок\n на маршруте в Ростове") + xlab("") + ylab("") + theme(plot.margin = unit(c(0.0, 0.0, -0.2, 0.0), "cm"))
 
+df_tmp = data.frame(len = NULL, route_n = NULL)
+bn = "1"
+for (bn in c(bus_numbers))
+{
+    df_tmp = rbind( df_tmp, c(bn, sum( df_bus_routes[ as.character(df_bus_routes$route_n) == bn, 2]) ))
+}
 
-png(filename = file.path(plotDir, "Routes stats.png"), width = 400, height = 800, units = "px", pointsize = 10, bg = "white", res = NA, family = "", restoreConsole = TRUE, type = c("cairo-png"))
+p4 = ggplot(data = df_sn2, aes(vehicle, Min.)) +
+    geom_bar(stat = "identity", fill = "steelblue") + ggtitle("Минимальное число остановок\n на маршруте в Ростове") + xlab("") + ylab("") + theme(plot.margin = unit(c(0.0, 0.0, -0.2, 0.0), "cm"))
 
-grid.arrange( p1,p2,p3, ncol = 1)
+p5 = ggplot(data = df_sn2, aes(vehicle, Max.)) +
+    geom_bar(stat = "identity", fill = "steelblue") + ggtitle("Максимальное число остановок\n на маршруте в Ростове") + xlab("") + ylab("") + theme(plot.margin = unit(c(0.0, 0.0, -0.2, 0.0), "cm"))
+
+p6 = ggplot(data = df_sn2, aes(vehicle, Mean)) +
+    geom_bar(stat = "identity", fill = "steelblue") + ggtitle("Среднее число остановок\n на маршруте в Ростове") + xlab("") + ylab("") + theme(plot.margin = unit(c(0.0, 0.0, -0.2, 0.0), "cm"))
+
+
+png(filename = file.path(plotDir, "Routes stats 1.png"), width = 300, height = 400, units = "px", pointsize = 12, bg = "white", res = NA, family = "", restoreConsole = TRUE, type = c("windows"))
+
+grid.arrange( p00, p0, ncol = 1)
+
+dev.off()
+
+png(filename = file.path(plotDir, "Routes stats 2.png"), width = 300, height = 600, units = "px", pointsize = 12, bg = "white", res = NA, family = "", restoreConsole = TRUE, type = c("windows"))
+
+grid.arrange(p1, p2, p3, ncol = 1)
 
 dev.off()
 
