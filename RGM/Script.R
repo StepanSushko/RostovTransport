@@ -5,8 +5,8 @@ if (!require("ggplot2")) { install.packages("ggplot2"); require("ggplot2") }
 library(stringr)
 library(gridExtra)
 
-dataDir = "C:/Users/stepa/OneDrive/DataScience/RgoogleMap/RGM"
-plotDir = "C:/Users/stepa/OneDrive/DataScience/RgoogleMap/RGM/Images"
+dataDir = "C:/Users/stepa/OneDrive/DataScience/Rostov Transport/RGM"
+plotDir = "C:/Users/stepa/OneDrive/DataScience/Rostov Transport/RGM/Images"
 
 df = read.xlsx(file.path(dataDir, "Bus stops.xlsx"), sheet = 1, startRow = 1)
 
@@ -36,7 +36,7 @@ colnames(df)[14] = "n_all"
 
 
 
-# Vehicle numbers list ----
+# Vehicle numbers lists ----
 library(gtools)
 bus_numbers = unique( unlist( strsplit( df$bus, ", ") ) ) 
 bus_numbers = mixedsort( bus_numbers )[-c(length(bus_numbers))]
@@ -157,6 +157,149 @@ df_trolley_routes = read.csv2(file = file.path(dataDir, "Trolley routes.csv"))[,
 #df_trolley_routes = df_routes(df$trolley, trolley_numbers)
 #write.csv2(x = df_tram_routes, file = file.path(dataDir, "Tram routes.csv"))
 df_tram_routes = read.csv2(file = file.path(dataDir, "Tram routes.csv"))[, - c(1)]
+
+df_bus_routes_2 = read.csv2(file = file.path(dataDir, "Bus routes 2.csv"), sep = ",")
+df_bus_routes_3 = read.csv2(file = file.path(dataDir, "Bus routes 3.csv"), sep = ",")
+df_bus_routes_4 = read.csv2(file = file.path(dataDir, "Bus routes 4.csv"), sep = ",")
+df_bus_routes_2 = df_bus_routes_4
+
+
+#  -----
+if (!require("circlize")) install.packages("circlize")
+
+route_n = as.character( unique(df_bus_routes_2$route_n) )
+
+df = data.frame(dist = NA, route_n = NA)
+i = "2"
+for (i in c(route_n)) {
+    dists = df_bus_routes_2[df_bus_routes_2$route_n == i,]
+    dists = as.character( unique(dists$name_2) )
+    df = rbind( df, data.frame( dist = dists, route_n = rep( i, length(dists)) ) )
+}
+df = df[-c(1),]
+
+df5 = as.data.frame.matrix( table( df$dist, df$route_n ) )
+df5 = as.data.frame.matrix(t(df5))
+
+dist_connect = array( dim = c(52, 52))
+for (i in c(1:dim(df5)[2])) {
+    for (j in c(1:dim(df5)[2])) {
+        dist_connect[i,j] = table(df5[, i], df5[, j])[2,2]
+    }
+}
+
+dist_connect[ dist_connect == 0 ] = NA
+
+dist_connect = as.data.frame(dist_connect)
+rownames( dist_connect ) = colnames(df5)
+colnames( dist_connect ) = rownames( dist_connect )
+
+for (i in c(1:dim(dist_connect)[1])) {
+    dist_connect[i,i] = NA
+}
+
+dist_connect = dist_connect/max( dist_connect, na.rm = T )
+
+dist_connect = dist_connect / 2
+
+
+# Mosaic ---
+if (!require("vcd")) { install.packages("vcd"); require("vcd") }
+
+
+#png(filename = file.path(plotDir, "Mosaic_Airline_vs_City.png"), width = 800, height = 800, units = "px", pointsize = 12, bg = "white", res = NA, family = "", restoreConsole = TRUE, type = c("cairo-png"))
+
+par(mar = rep(.5, 4))
+mosaicplot(dist_connect, las = 2, col = "steelblue", main = "", cex = 0.3)
+
+text(x = grconvertX(0.5, from = "npc"), y = grconvertY(0.5, from = "npc"),
+        labels = "Степан Сушко", cex = 3, font = 2, col = adjustcolor("grey", alpha.f = 0.35), srt = 45)
+
+#dev.off()
+
+# Circlize ----
+factors = c( colnames(dist_connect) )
+factors = factor(factors, levels = factors)
+
+par(mfrow = c(1, 1))
+set.seed(10)
+
+
+xlim = c(-1,1)
+
+
+
+
+circos.clear()
+circos.par(
+        start.degree = pi * 0.5,
+        gap.degree = 1,
+        track.margin = c(0.0005, 0.0005),
+        cell.padding = c(0, 0, 0, 0))
+circos.initialize(factors = factors, xlim = xlim)
+
+#title(main = paste("Lag =", lag), col = "darkgrey")
+
+
+# Dial
+#      circos.trackPlotRegion( track.index = 4, 
+#                              panel.fun   = function(x, y) {
+#                                circos.axis("bottom", major.tick.percentage = 0.2, labels.cex = 0.8)}, 
+#                              bg.border   = NA)
+circos.info(plot = T)
+# Products
+
+
+label_color = function( datacor, reg_group, sector.index, prods) {
+    return(adjustcolor("black",
+        alpha.f = max(0.15,
+            abs(datacor[as.numeric(reg_group[which(reg_group[, 3] == sector.index), 6]), prods]))))
+}
+#label_color(datacor, reg_group, sector.index, prods)
+
+
+circos.trackPlotRegion(
+                              track.index = 1,
+                              ylim = c(0, 1),
+                              panel.fun = function(x, y) {
+                                  xlim = get.cell.meta.data("xlim")
+                                  ylim = get.cell.meta.data("ylim")
+                                  sector.index = get.cell.meta.data("sector.index")
+                                  circos.text(median(xlim), 0.0,
+                                             sector.index,
+                                             cex = 0.4,
+                                             facing = "clockwise", adj = c(0.0, 0), niceFacing = F,
+                                             col = "black"#label_color(datacor, reg_group, sector.index, prods)
+                                             )
+                              },
+                              bg.border = NA,
+                              bg.col = "white")
+
+i = 51
+j = 20
+
+
+for (i in c(1:dim(dist_connect)[1])) {
+    for (j in c(1:dim(dist_connect)[1])) {
+        if ( !is.na( dist_connect[i, j]) ) {
+            cum_conn1 = dim(dist_connect)[1] - sum(is.na(dist_connect[i,]))
+            cum_conn2 = dim(dist_connect)[1] - sum(is.na(dist_connect[, j]))
+            wd1 = cum_conn1 / dim(dist_connect)[1]# * dist_connect[i, j]
+            wd2 = cum_conn2 / dim(dist_connect)[1]# * dist_connect[i, j]
+            circos.link(
+                rownames(dist_connect)[i], c(-wd1, wd1) , lty = 1,
+                colnames(dist_connect)[j], c(-wd2, wd2),
+                col = adjustcolor("cyan4", alpha.f = dist_connect[i, j]*0.5)) #col_datacor[i, j]) #, border = "white")
+        }
+    }
+}
+
+text(x = grconvertX(0.5, from = "npc"), y = grconvertY(0.5, from = "npc"),
+        labels = "Степан Сушко", cex = 3, font = 2, col = adjustcolor("grey", alpha.f = 0.35), srt = 45)
+
+
+
+
 
 
 
