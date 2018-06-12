@@ -1,9 +1,13 @@
+Sys.setenv(LANG = "en")
 if (!require("RgoogleMaps")) { install.packages("RgoogleMaps"); require("RgoogleMaps") }
 if (!require("openxlsx")) { install.packages("openxlsx"); require("openxlsx") }
 if (!require("loa")) { install.packages("loa"); require("loa") }
 if (!require("ggplot2")) { install.packages("ggplot2"); require("ggplot2") }
 library(stringr)
 library(gridExtra)
+
+if (!require("extrafont")) { install.packages("extrafont"); require("extrafont") }
+loadfonts()
 
 dataDir = "C:/Users/stepa/OneDrive/DataScience/Rostov Transport/RGM"
 plotDir = "C:/Users/stepa/OneDrive/DataScience/Rostov Transport/RGM/Images"
@@ -18,7 +22,7 @@ df$lon = as.numeric(df$lon)
 
 
 
-# Number of routes
+# Number of routes ----
 df = cbind( df, str_count(df$bus, ",")     + 1 )
 df = cbind( df, str_count(df$tram, ",")    + 1 )
 df = cbind( df, str_count(df$trolley, ",") + 1 )
@@ -164,7 +168,7 @@ df_bus_routes_4 = read.csv2(file = file.path(dataDir, "Bus routes 4.csv"), sep =
 df_bus_routes_2 = df_bus_routes_4
 
 
-#  -----
+# Districts Connection DF  -----
 if (!require("circlize")) install.packages("circlize")
 
 route_n = as.character( unique(df_bus_routes_2$route_n) )
@@ -181,26 +185,28 @@ df = df[-c(1),]
 df5 = as.data.frame.matrix( table( df$dist, df$route_n ) )
 df5 = as.data.frame.matrix(t(df5))
 
-dist_connect = array( dim = c(52, 52))
+df_dist_connect = array( dim = c(52, 52))
 for (i in c(1:dim(df5)[2])) {
     for (j in c(1:dim(df5)[2])) {
-        dist_connect[i,j] = table(df5[, i], df5[, j])[2,2]
+        df_dist_connect[i,j] = table(df5[, i], df5[, j])[2,2]
     }
 }
 
-dist_connect[ dist_connect == 0 ] = NA
+df_dist_connect[ df_dist_connect == 0 ] = NA
 
-dist_connect = as.data.frame(dist_connect)
-rownames( dist_connect ) = colnames(df5)
-colnames( dist_connect ) = rownames( dist_connect )
+df_dist_connect = as.data.frame(df_dist_connect)
+rownames( df_dist_connect ) = colnames(df5)
+colnames( df_dist_connect ) = rownames( df_dist_connect )
 
-for (i in c(1:dim(dist_connect)[1])) {
-    dist_connect[i,i] = NA
+for (i in c(1:dim(df_dist_connect)[1])) {
+    df_dist_connect[i,i] = NA
 }
 
-dist_connect = dist_connect/max( dist_connect, na.rm = T )
+df_dist_connect = df_dist_connect/max( df_dist_connect, na.rm = T )
 
-dist_connect = dist_connect / 2
+df_dist_connect = df_dist_connect / 2
+
+
 
 
 # Mosaic ---
@@ -210,7 +216,7 @@ if (!require("vcd")) { install.packages("vcd"); require("vcd") }
 #png(filename = file.path(plotDir, "Mosaic_Airline_vs_City.png"), width = 800, height = 800, units = "px", pointsize = 12, bg = "white", res = NA, family = "", restoreConsole = TRUE, type = c("cairo-png"))
 
 par(mar = rep(.5, 4))
-mosaicplot(dist_connect, las = 2, col = "steelblue", main = "", cex = 0.3)
+mosaicplot(df_dist_connect, las = 2, col = "steelblue", main = "", cex = 0.3)
 
 text(x = grconvertX(0.5, from = "npc"), y = grconvertY(0.5, from = "npc"),
         labels = "Степан Сушко", cex = 3, font = 2, col = adjustcolor("grey", alpha.f = 0.35), srt = 45)
@@ -218,7 +224,7 @@ text(x = grconvertX(0.5, from = "npc"), y = grconvertY(0.5, from = "npc"),
 #dev.off()
 
 # Circlize ----
-factors = c( colnames(dist_connect) )
+factors = c( colnames(df_dist_connect) )
 factors = factor(factors, levels = factors)
 
 par(mfrow = c(1, 1))
@@ -230,6 +236,52 @@ xlim = c(-1,1)
 
 
 
+r_color = rand_color(length(unique(df_bus_routes_2$wikipedia)), 0.7)
+
+df_bus_routes_2$wikipedia = as.character(df_bus_routes_2$wikipedia)
+df_bus_routes_2$wikipedia = gsub("ru:", "", df_bus_routes_2$wikipedia)
+df_bus_routes_2$name_3 = gsub(" \\(Ростов-на-Дону\\)", "", df_bus_routes_2$wikipedia)
+
+df_bus_routes_2$name_2 = as.character(df_bus_routes_2$name_2)
+
+df_dist_corresp = data.frame(Dist = NA, Adm_dist = NA)
+for (dist in c(rownames(df_dist_connect))) {
+    adm_dist = unique(df_bus_routes_2$name_3[df_bus_routes_2$name_2 == dist])
+    df_dist_corresp = rbind(df_dist_corresp, data.frame(Dist = rep(dist, length(adm_dist)), Adm_dist = adm_dist))
+}
+
+df_dist_corresp = df_dist_corresp[c(2:11, 13:15, 17:19, 21:27, 29, 31:49, 51, 53, 55:60, 63),]
+
+
+library(dplyr)
+df_dist_corresp <- df_dist_corresp %>%
+        mutate(recode = as.numeric(factor(Adm_dist)))
+
+
+dist_order = order(df_dist_corresp$Adm_dist)
+factors = df_dist_corresp$Dist[dist_order]
+
+df_dist_connect = df_dist_connect[dist_order, dist_order]
+
+
+
+label_color = function(df_dist_connect, sector.index) {
+    cum_conn1 = dim(df_dist_connect)[1] - sum(is.na(df_dist_connect[sector.index,]))
+    wd1 = cum_conn1 / dim(df_dist_connect)[1]
+    return(adjustcolor("black",
+        alpha.f = max(0.22, wd1)))
+}
+
+
+font_import()
+loadfonts(device = "pdf", quiet = T)
+
+
+# Circle Plot
+#dev.off()
+#pdf(file = paste(plotDir, "/Bus Routes Circlize.pdf", sep = ""), width = 12, height = 12, family = "Times")
+png(filename = file.path(plotDir, "Bus Routes Circlize.png"), width = 1280, height = 1280, units = "px", pointsize = 16, bg = "white", res = NA, family = "", restoreConsole = TRUE, type = c("cairo-png"))
+
 circos.clear()
 circos.par(
         start.degree = pi * 0.5,
@@ -238,26 +290,11 @@ circos.par(
         cell.padding = c(0, 0, 0, 0))
 circos.initialize(factors = factors, xlim = xlim)
 
-#title(main = paste("Lag =", lag), col = "darkgrey")
+title(main = "Связность районов г.Ростова-на-Дону", col = "darkgrey")#, cex = 0.1)
 
-
-# Dial
-#      circos.trackPlotRegion( track.index = 4, 
-#                              panel.fun   = function(x, y) {
-#                                circos.axis("bottom", major.tick.percentage = 0.2, labels.cex = 0.8)}, 
-#                              bg.border   = NA)
 circos.info(plot = T)
-# Products
 
-
-label_color = function( datacor, reg_group, sector.index, prods) {
-    return(adjustcolor("black",
-        alpha.f = max(0.15,
-            abs(datacor[as.numeric(reg_group[which(reg_group[, 3] == sector.index), 6]), prods]))))
-}
-#label_color(datacor, reg_group, sector.index, prods)
-
-
+# Districts
 circos.trackPlotRegion(
                               track.index = 1,
                               ylim = c(0, 1),
@@ -267,38 +304,64 @@ circos.trackPlotRegion(
                                   sector.index = get.cell.meta.data("sector.index")
                                   circos.text(median(xlim), 0.0,
                                              sector.index,
-                                             cex = 0.4,
+                                             #cex = 0.5,
                                              facing = "clockwise", adj = c(0.0, 0), niceFacing = F,
-                                             col = "black"#label_color(datacor, reg_group, sector.index, prods)
+                                             col = label_color(df_dist_connect, sector.index)
                                              )
                               },
                               bg.border = NA,
                               bg.col = "white")
 
-i = 51
-j = 20
+
+# Administrative District
+circos.trackPlotRegion(
+        track.index = 2,
+        track.height = 0.025,
+        ylim = c(0, 1),
+        panel.fun = function(x, y) {
+            xlim = get.cell.meta.data("xlim")
+            ylim = get.cell.meta.data("ylim")
+            sector.index = get.cell.meta.data("sector.index")
+            #circos.rect( min(xlim), max(ylim), max(xlim), min(ylim), 
+            #             sector.index, 
+            #             col   = adjustcolor( (reg_group[ which( reg_group[,3]  == sector.index ), 4]) + 1, alpha.f = 0.2) )
+            #     circos.text( label = reg_group[ which( as.character( reg_group[,3]) == sector.index ), 1], 
+            #                   mean(xlim), mean(ylim), sector.index, cex = 0.6, facing = "inside", niceFacing = F)
+        },
+        bg.border = NA,
+        bg.col = adjustcolor( df_dist_corresp$recode[order(df_dist_corresp$Adm_dist)], 0.3)
+      )
 
 
-for (i in c(1:dim(dist_connect)[1])) {
-    for (j in c(1:dim(dist_connect)[1])) {
-        if ( !is.na( dist_connect[i, j]) ) {
-            cum_conn1 = dim(dist_connect)[1] - sum(is.na(dist_connect[i,]))
-            cum_conn2 = dim(dist_connect)[1] - sum(is.na(dist_connect[, j]))
-            wd1 = cum_conn1 / dim(dist_connect)[1]# * dist_connect[i, j]
-            wd2 = cum_conn2 / dim(dist_connect)[1]# * dist_connect[i, j]
+# Connections
+for (i in c(1:dim(df_dist_connect)[1])) {
+    for (j in c(1:dim(df_dist_connect)[1])) {
+        if ( !is.na( df_dist_connect[i, j]) ) {
+            cum_conn1 = dim(df_dist_connect)[1] - sum(is.na(df_dist_connect[i,]))
+            cum_conn2 = dim(df_dist_connect)[1] - sum(is.na(df_dist_connect[, j]))
+            wd1 = cum_conn1 / dim(df_dist_connect)[1]# * df_dist_connect[i, j]
+            wd2 = cum_conn2 / dim(df_dist_connect)[1]# * df_dist_connect[i, j]
             circos.link(
-                rownames(dist_connect)[i], c(-wd1, wd1) , lty = 1,
-                colnames(dist_connect)[j], c(-wd2, wd2),
-                col = adjustcolor("cyan4", alpha.f = dist_connect[i, j]*0.5)) #col_datacor[i, j]) #, border = "white")
+                rownames(df_dist_connect)[i], c(-wd1, wd1) , lty = 1,
+                colnames(df_dist_connect)[j], c(-wd2, wd2),
+                col = adjustcolor("cyan4", alpha.f = df_dist_connect[i, j]*0.5)) #col_datacor[i, j]) #, border = "white")
         }
     }
 }
 
+# Annotations
 text(x = grconvertX(0.5, from = "npc"), y = grconvertY(0.5, from = "npc"),
-        labels = "Степан Сушко", cex = 3, font = 2, col = adjustcolor("grey", alpha.f = 0.35), srt = 45)
+        labels = "Степан Сушко", cex = 3, font = 2, col = adjustcolor("grey", alpha.f = 0.99), srt = 45)
+# Legend
+legend("topleft",
+             legend = gsub(" район","",unique(df_dist_corresp$Adm_dist)),
+             fill = adjustcolor( unique(df_dist_corresp$recode), 0.3),
+             #cex = 0.5,
+             title = "Район")
 
 
 
+dev.off()
 
 
 
