@@ -9,7 +9,7 @@ library(gridExtra)
 if (!require("extrafont")) { install.packages("extrafont"); require("extrafont") }
 loadfonts()
 
-dataDir = "C:/Users/stepa/OneDrive/DataScience/Rostov Transport/RGM"
+dataDir = "C:/Users/stepa/OneDrive/DataScience/Rostov Transport/RGM/Data"
 plotDir = "C:/Users/stepa/OneDrive/DataScience/Rostov Transport/RGM/Images"
 
 df = read.xlsx(file.path(dataDir, "Bus stops.xlsx"), sheet = 1, startRow = 1)
@@ -168,11 +168,15 @@ df_bus_routes_4 = read.csv2(file = file.path(dataDir, "Bus routes 4.csv"), sep =
 df_bus_routes_2 = df_bus_routes_4
 
 
+
+
 # Districts Connection DF  -----
 if (!require("circlize")) install.packages("circlize")
 
+# List of all routes
 route_n = as.character( unique(df_bus_routes_2$route_n) )
 
+# List of unofficial districs paasing by each route
 df = data.frame(dist = NA, route_n = NA)
 i = "2"
 for (i in c(route_n)) {
@@ -182,9 +186,11 @@ for (i in c(route_n)) {
 }
 df = df[-c(1),]
 
+# Table indicating (0-no, 1-yes) whether route passes a district
 df5 = as.data.frame.matrix( table( df$dist, df$route_n ) )
 df5 = as.data.frame.matrix(t(df5))
 
+# Table with the number of routes connecting each pair of unofficial districts
 df_dist_connect = array( dim = c(52, 52))
 for (i in c(1:dim(df5)[2])) {
     for (j in c(1:dim(df5)[2])) {
@@ -199,9 +205,9 @@ rownames( df_dist_connect ) = colnames(df5)
 colnames( df_dist_connect ) = rownames( df_dist_connect )
 
 for (i in c(1:dim(df_dist_connect)[1])) {
-    df_dist_connect[i,i] = NA
-}
+    df_dist_connect[i,i] = NA }
 
+# Normalization of the table to values from 0 to 1
 df_dist_connect = df_dist_connect/max( df_dist_connect, na.rm = T )
 
 df_dist_connect = df_dist_connect / 2
@@ -216,21 +222,21 @@ if (!require("vcd")) { install.packages("vcd"); require("vcd") }
 #png(filename = file.path(plotDir, "Mosaic_Airline_vs_City.png"), width = 800, height = 800, units = "px", pointsize = 12, bg = "white", res = NA, family = "", restoreConsole = TRUE, type = c("cairo-png"))
 
 par(mar = rep(.5, 4))
-mosaicplot(df_dist_connect, las = 2, col = "steelblue", main = "", cex = 0.3)
+mosaicplot( df_dist_connect, las = 2, col = "steelblue", main = "", cex = 0.3)
 
 text(x = grconvertX(0.5, from = "npc"), y = grconvertY(0.5, from = "npc"),
         labels = "Степан Сушко", cex = 3, font = 2, col = adjustcolor("grey", alpha.f = 0.35), srt = 45)
 
 #dev.off()
 
+
+
+
 # Circlize ----
-factors = c( colnames(df_dist_connect) )
-factors = factor(factors, levels = factors)
+#factors = c( colnames(df_dist_connect) )
+#factors = factor(factors, levels = factors)
 
-par(mfrow = c(1, 1))
 set.seed(10)
-
-
 xlim = c(-1,1)
 
 
@@ -238,33 +244,37 @@ xlim = c(-1,1)
 
 r_color = rand_color(length(unique(df_bus_routes_2$wikipedia)), 0.7)
 
+# City official distric names column
 df_bus_routes_2$wikipedia = as.character(df_bus_routes_2$wikipedia)
 df_bus_routes_2$wikipedia = gsub("ru:", "", df_bus_routes_2$wikipedia)
 df_bus_routes_2$name_3 = gsub(" \\(Ростов-на-Дону\\)", "", df_bus_routes_2$wikipedia)
 
+# City unofficial distric names column
 df_bus_routes_2$name_2 = as.character(df_bus_routes_2$name_2)
 
+# Correspondence of official and unofficial districts DF
 df_dist_corresp = data.frame(Dist = NA, Adm_dist = NA)
 for (dist in c(rownames(df_dist_connect))) {
     adm_dist = unique(df_bus_routes_2$name_3[df_bus_routes_2$name_2 == dist])
     df_dist_corresp = rbind(df_dist_corresp, data.frame(Dist = rep(dist, length(adm_dist)), Adm_dist = adm_dist))
 }
 
+# Uniqnues of correspondence
 df_dist_corresp = df_dist_corresp[c(2:11, 13:15, 17:19, 21:27, 29, 31:49, 51, 53, 55:60, 63),]
 
-
+# Coding of off.districts
 library(dplyr)
 df_dist_corresp <- df_dist_corresp %>%
         mutate(recode = as.numeric(factor(Adm_dist)))
 
-
+# Reorder of Connection DF w.r.t. off.district names
 dist_order = order(df_dist_corresp$Adm_dist)
 factors = df_dist_corresp$Dist[dist_order]
 
 df_dist_connect = df_dist_connect[dist_order, dist_order]
 
 
-
+# Coloring of districts
 label_color = function(df_dist_connect, sector.index) {
     cum_conn1 = dim(df_dist_connect)[1] - sum(is.na(df_dist_connect[sector.index,]))
     wd1 = cum_conn1 / dim(df_dist_connect)[1]
@@ -273,14 +283,17 @@ label_color = function(df_dist_connect, sector.index) {
 }
 
 
-font_import()
-loadfonts(device = "pdf", quiet = T)
+#font_import()
+#loadfonts(device = "pdf", quiet = T)
 
 
 # Circle Plot
 #dev.off()
 #pdf(file = paste(plotDir, "/Bus Routes Circlize.pdf", sep = ""), width = 12, height = 12, family = "Times")
 png(filename = file.path(plotDir, "Bus Routes Circlize.png"), width = 1280, height = 1280, units = "px", pointsize = 16, bg = "white", res = NA, family = "", restoreConsole = TRUE, type = c("cairo-png"))
+
+
+par(mfrow = c(1, 1))
 
 circos.clear()
 circos.par(
