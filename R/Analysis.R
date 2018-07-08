@@ -165,7 +165,8 @@ df_tram_routes = read.csv2(file = file.path(dataDir, "Tram routes.csv"))[, - c(1
 df_bus_routes_2 = read.csv2(file = file.path(dataDir, "Bus routes 2.csv"), sep = ",")
 df_bus_routes_3 = read.csv2(file = file.path(dataDir, "Bus routes 3.csv"), sep = ",")
 df_bus_routes_4 = read.csv2(file = file.path(dataDir, "Bus routes 4.csv"), sep = ",")
-df_bus_routes_2 = df_bus_routes_4
+df_bus_routes_5 = read.csv2(file = file.path(dataDir, "BusRoutes_DistrictsNew_no_blocks.csv"), sep = ",")
+df_bus_routes_2 = df_bus_routes_5
 
 
 
@@ -176,7 +177,7 @@ if (!require("circlize")) install.packages("circlize")
 # List of all routes
 route_n = as.character( unique(df_bus_routes_2$route_n) )
 
-# List of unofficial districs paasing by each route
+# List of unofficial districs passing by each route
 df = data.frame(dist = NA, route_n = NA)
 i = "2"
 for (i in c(route_n)) {
@@ -191,7 +192,7 @@ df5 = as.data.frame.matrix( table( df$dist, df$route_n ) )
 df5 = as.data.frame.matrix(t(df5))
 
 # Table with the number of routes connecting each pair of unofficial districts
-df_dist_connect = array( dim = c(52, 52))
+df_dist_connect = array(dim = c(dim(df5)[2], dim(df5)[2]))
 for (i in c(1:dim(df5)[2])) {
     for (j in c(1:dim(df5)[2])) {
         df_dist_connect[i,j] = table(df5[, i], df5[, j])[2,2]
@@ -259,8 +260,12 @@ for (dist in c(rownames(df_dist_connect))) {
     df_dist_corresp = rbind(df_dist_corresp, data.frame(Dist = rep(dist, length(adm_dist)), Adm_dist = adm_dist))
 }
 
-# Uniqnues of correspondence
-df_dist_corresp = df_dist_corresp[c(2:11, 13:15, 17:19, 21:27, 29, 31:49, 51, 53, 55:60, 63),]
+# Uniqnues of correspondence (Estate)
+#df_dist_corresp = df_dist_corresp[c(2:11, 13:15, 17:19, 21:27, 29, 31:49, 51, 53, 55:60, 63),]
+
+# Uniqnues of correspondence (Mikhail)
+df_dist_corresp = df_dist_corresp[c(2:5, 8, 9, 11, 13, 15, 18, 20, 22, 23, 25, 28, 32, 33, 35, 36, 39, 42, 43, 44, 45, 47, 48, 49, 51, 53, 55, 58:60, 62, 63, 65, 66, 69, 71 
+),]
 
 # Coding of off.districts
 library(dplyr)
@@ -282,6 +287,7 @@ label_color = function(df_dist_connect, sector.index) {
         alpha.f = max(0.22, wd1)))
 }
 
+#df_tmp = df_bus_routes_2[, c(2, 4, 9, 10, 19, 30, 68, 69, 73)]
 
 #font_import()
 #loadfonts(device = "pdf", quiet = T)
@@ -290,7 +296,7 @@ label_color = function(df_dist_connect, sector.index) {
 # Circle Plot
 #dev.off()
 #pdf(file = paste(plotDir, "/Bus Routes Circlize.pdf", sep = ""), width = 12, height = 12, family = "Times")
-png(filename = file.path(plotDir, "Bus Routes Circlize.png"), width = 1280, height = 1280, units = "px", pointsize = 16, bg = "white", res = NA, family = "", restoreConsole = TRUE, type = c("cairo-png"))
+png(filename = file.path(plotDir, "Bus Routes Circlize 2.png"), width = 1280, height = 1280, units = "px", pointsize = 16, bg = "white", res = NA, family = "", restoreConsole = TRUE, type = c("cairo-png"))
 
 
 par(mfrow = c(1, 1))
@@ -364,7 +370,7 @@ for (i in c(1:dim(df_dist_connect)[1])) {
 
 # Annotations
 text(x = grconvertX(0.5, from = "npc"), y = grconvertY(0.5, from = "npc"),
-        labels = "Степан Сушко", cex = 3, font = 2, col = adjustcolor("grey", alpha.f = 0.99), srt = 45)
+        labels = "Степан Сушко \n для \n UrbanFactory", cex = 3, font = 2, col = adjustcolor("grey", alpha.f = 0.99), srt = 45)
 # Legend
 legend("topleft",
              legend = gsub(" район","",unique(df_dist_corresp$Adm_dist)),

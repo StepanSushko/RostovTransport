@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 15
+VisualStudioVersion = 15.0.27703.2026
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{DA7A21FA-8162-4350-AD77-A8D1B671F3ED}") = "RostovTransport", "R.rxproj", "{4FE6EFE8-DF06-4361-B91B-FBA1CE5231AD}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{4FE6EFE8-DF06-4361-B91B-FBA1CE5231AD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4FE6EFE8-DF06-4361-B91B-FBA1CE5231AD}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4FE6EFE8-DF06-4361-B91B-FBA1CE5231AD}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4FE6EFE8-DF06-4361-B91B-FBA1CE5231AD}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {1FA0D8A8-2DE1-4F6C-BC16-085E7BA38F36}
+	EndGlobalSection
+EndGlobal
